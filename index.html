@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workout Cervinia - Booking</title>
+  <title>Functional Training Cervinia - Booking</title>
   
   <!-- EmailJS SDK -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -189,7 +189,7 @@
   <script>
     // --- EMAILJS CONFIGURATION ---
     const EMAILJS_PUBLIC_KEY = "puwNNWhFY_Bn07wU6";
-    const EMAILJS_SERVICE_ID = "service_t8w4z6d";
+    const EMAILJS_SERVICE_ID = "service_fqd23dt";
     const EMAILJS_TEMPLATE_ID = "template_gzhcw2w";
 
     emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -203,7 +203,7 @@
       };
 
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
-        .then(() => console.log('Notification email sent!'))
+        .then(() => console.log('Notification email sent successfully!'))
         .catch(err => console.error('Failed to send email:', err));
     }
 
