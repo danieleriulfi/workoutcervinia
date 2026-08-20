@@ -204,47 +204,46 @@
     let selectedDateStr = "";
 
     function initMonthSelect() {
-  const select = document.getElementById('month-select');
-  select.innerHTML = '';
+      const select = document.getElementById('month-select');
+      select.innerHTML = '';
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
 
-  // Data attuale di sistema
-  const now = new Date();
-  let startYear = now.getFullYear();
-  let startMonth = now.getMonth(); // 0-indexed
+      // Data attuale
+      const now = new Date();
+      let startYear = now.getFullYear();
+      let startMonth = now.getMonth();
 
-  // Se siamo prima di Ottobre 2026, forza la partenza da Ottobre 2026
-  const minStartDate = new Date(2026, 9, 1);
-  if (now < minStartDate) {
-    startYear = 2026;
-    startMonth = 9; // Ottobre
-  }
+      // Fallback: Se la data corrente e' prima di Ottobre 2026, parte da Ottobre 2026
+      const minStartDate = new Date(2026, 9, 1);
+      if (now < minStartDate) {
+        startYear = 2026;
+        startMonth = 9; // Ottobre
+      }
 
-  // Popola i prossimi 8 mesi a partire da quello attuale/iniziale
-  for (let i = 0; i < 8; i++) {
-    const d = new Date(startYear, startMonth + i, 1);
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    
-    const val = `${y}-${String(m + 1).padStart(2, '0')}`;
-    const label = `${monthNames[m]} ${y}`;
+      for (let i = 0; i < 8; i++) {
+        const d = new Date(startYear, startMonth + i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        
+        const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+        const label = `${monthNames[m]} ${y}`;
 
-    const option = document.createElement('option');
-    option.value = val;
-    option.textContent = label;
-    select.appendChild(option);
-  }
-}
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = label;
+        select.appendChild(option);
+      }
+    }
 
     function isDateValid(year, month, day) {
       const date = new Date(year, month - 1, day);
       date.setHours(0, 0, 0, 0);
       
-      // Prima data consentita: 31 Ottobre 2026
+      // Prima data consentita in assoluto: 31 Ottobre 2026
       const firstAvailableDate = new Date(2026, 9, 31); 
       firstAvailableDate.setHours(0, 0, 0, 0);
 
@@ -260,14 +259,14 @@
       ];
       if (blockedDates.includes(dateStr)) return false;
 
-      // 2. Date extra
+      // 2. Date extra abilitate
       const extraDates = [
         "2026-12-07",
         "2026-12-08"
       ];
       if (extraDates.includes(dateStr)) return true;
 
-      // 3. Festività natalizie
+      // 3. Festivita natalizie
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
 
@@ -283,7 +282,7 @@
       const [year, month] = monthSelect.value.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
       
-      // Calcolo offset primo giorno del mese (Lunedì = 0)
+      // Offset primo giorno del mese (Lunedì = 0)
       const firstDayJS = new Date(year, month - 1, 1).getDay();
       const startOffset = (firstDayJS === 0) ? 6 : firstDayJS - 1;
 
