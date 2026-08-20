@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Functional Training Cervinia - Prenotazione</title>
+  <title>Functional Training Cervinia - Booking</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -141,33 +141,33 @@
 
   <header>
     <h1>Functional Training Cervinia 🏔️</h1>
-    <p>Scegli mese, giorno e orario per prenotarti.</p>
+    <p>Select month, day, and time slot to book your workout.</p>
   </header>
 
   <div class="container">
     
-    <!-- STEP 1: Seleziona Mese -->
+    <!-- STEP 1: Select Month -->
     <div class="step-card">
-      <div class="step-title">1. Seleziona il Mese</div>
+      <div class="step-title">1. Select Month</div>
       <select id="month-select" onchange="renderDays()">
-        <option value="2026-10">Ottobre 2026</option>
-        <option value="2026-11">Novembre 2026</option>
-        <option value="2026-12">Dicembre 2026</option>
-        <option value="2027-01">Gennaio 2027</option>
-        <option value="2027-02">Febbraio 2027</option>
-        <option value="2027-03">Marzo 2027</option>
-        <option value="2027-04">Aprile 2027</option>
-        <option value="2027-05">Maggio 2027</option>
+        <option value="2026-10">October 2026</option>
+        <option value="2026-11">November 2026</option>
+        <option value="2026-12">December 2026</option>
+        <option value="2027-01">January 2027</option>
+        <option value="2027-02">February 2027</option>
+        <option value="2027-03">March 2027</option>
+        <option value="2027-04">April 2027</option>
+        <option value="2027-05">May 2027</option>
       </select>
     </div>
 
-    <!-- STEP 2: Seleziona Giorno -->
+    <!-- STEP 2: Select Day -->
     <div class="step-card">
-      <div class="step-title">2. Seleziona il Giorno</div>
+      <div class="step-title">2. Select Day</div>
       <div id="days-container" class="days-grid"></div>
     </div>
 
-    <!-- STEP 3: Slot Orari -->
+    <!-- STEP 3: Time Slots -->
     <div id="slots-container"></div>
 
   </div>
@@ -176,10 +176,10 @@
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
     
-    // Inserisci qui le date che vuoi BLOCCARE nel formato "AAAA-MM-GG"
+    // Add dates you want to BLOCK here in "YYYY-MM-DD" format
     const BLOCKED_DATES = [
-      "2026-12-25", // Esempio: Natale
-      "2027-01-01"  // Esempio: Capodanno
+      "2026-12-25", // Example: Christmas Day
+      "2027-01-01"  // Example: New Year's Day
     ];
 
     let selectedDateStr = "";
@@ -187,20 +187,20 @@
     function isDateValid(year, month, day) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       
-      // Controlla se la data è nell'elenco delle date bloccate
+      // Check if date is manually blocked
       if (BLOCKED_DATES.includes(dateStr)) return false;
 
       const date = new Date(year, month - 1, day);
-      const startSeason = new Date(2026, 9, 31); // 31 Ottobre 2026
-      const endSeason = new Date(2027, 4, 2);   // 2 Maggio 2027
+      const startSeason = new Date(2026, 9, 31); // Oct 31, 2026
+      const endSeason = new Date(2027, 4, 2);   // May 2, 2027
 
       if (date < startSeason || date > endSeason) return false;
 
-      // Periodo Natalizio: 23 Dicembre - 8 Gennaio
+      // Christmas Holiday Period: Dec 23 - Jan 8
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
 
-      // Altrimenti solo Sabato (6) e Domenica (0)
+      // Otherwise weekends only (Saturday = 6, Sunday = 0)
       const dayOfWeek = date.getDay();
       return dayOfWeek === 0 || dayOfWeek === 6;
     }
@@ -288,7 +288,7 @@
       container.innerHTML = '';
 
       if (!selectedDateStr) {
-        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Nessun giorno disponibile selezionato per questo mese.</div>';
+        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No available days selected for this month.</div>';
         return;
       }
 
@@ -305,22 +305,22 @@
         card.className = 'slot-card';
         card.innerHTML = `
           <div class="slot-header">
-            <span class="time">Ore ${slot}</span>
+            <span class="time">${slot}</span>
             <span class="badge ${isFull ? 'full' : ''}">
-              ${isFull ? 'Completo' : `${available} posti liberi`}
+              ${isFull ? 'Fully Booked' : `${available} spots available`}
             </span>
           </div>
 
           <div class="form-group">
-            <input type="text" id="${inputId}" placeholder="Scrivi il tuo nome" ${isFull ? 'disabled' : ''}>
-            <button class="btn-submit" onclick="addBooking('${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
+            <input type="text" id="${inputId}" placeholder="Enter your name" ${isFull ? 'disabled' : ''}>
+            <button class="btn-submit" onclick="addBooking('${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Book</button>
           </div>
 
           <ul class="attendees-list">
             ${list.map((name, i) => `
               <li class="attendee-item">
                 <span>👤 ${name}</span>
-                <button class="btn-cancel" onclick="removeBooking('${slot}', ${i})">Cancella</button>
+                <button class="btn-cancel" onclick="removeBooking('${slot}', ${i})">Cancel</button>
               </li>
             `).join('')}
           </ul>
@@ -329,7 +329,7 @@
       });
     }
 
-    // Avvio iniziale
+    // Initial render
     renderDays();
   </script>
 </body>
