@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Functional Training Cervinia - Prenotazione Slot</title>
+  <title>Functional Training Cervinia - Prenotazione</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -18,11 +18,33 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding: 20px 15px; min-height: 100vh; }
     
-    header { text-align: center; margin-bottom: 25px; }
+    header { text-align: center; margin-bottom: 20px; }
     header h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
     header p { color: var(--subtext); font-size: 0.95rem; }
 
     .container { max-width: 500px; margin: 0 auto; display: grid; gap: 15px; }
+
+    .date-picker-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #334155;
+    }
+    .date-picker-card label { display: block; font-weight: bold; margin-bottom: 8px; }
+    .date-picker-card input[type="date"] {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 1rem;
+      width: 100%;
+      max-width: 250px;
+      text-align: center;
+    }
+
+    .error-msg { color: #f87171; font-size: 0.9rem; margin-top: 8px; display: none; }
 
     .slot-card {
       background-color: var(--card-bg);
@@ -90,55 +112,101 @@
 
   <header>
     <h1>Functional Training Cervinia 🏔️</h1>
-    <p>Inserisci il tuo nome per prenotare la lezione.<br>Massimo 5 persone per slot.</p>
+    <p>Seleziona la data e inserisci il tuo nome per prenotare.<br>Massimo 5 persone per slot.</p>
   </header>
 
-  <div class="container" id="slots-container"></div>
+  <div class="container">
+    <div class="date-picker-card">
+      <label for="booking-date">Scegli la data dell'allenamento:</label>
+      <input type="date" id="booking-date" min="2026-10-31" max="2027-05-02">
+      <div id="error-msg" class="error-msg">Iscrizioni aperte solo nei weekend (Sab/Dom) o nel periodo natalizio (23 Dic - 8 Gen).</div>
+    </div>
+
+    <div id="slots-container"></div>
+  </div>
 
   <script>
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+    const dateInput = document.getElementById('booking-date');
+    const errorMsg = document.getElementById('error-msg');
 
-    function getBookings() {
-      const stored = localStorage.getItem('cervinia_bookings');
-      if (stored) return JSON.parse(stored);
+    // Imposta come data predefinita oggi se valida, altrimenti la prima data utile (31 ott)
+    const todayStr = new Date().toISOString().split('T')[0];
+    dateInput.value = isDateValid(todayStr) ? todayStr : "2026-10-31";
+
+    function isDateValid(dateString) {
+      if (!dateString) return false;
+      const date = new Date(dateString + 'T00:00:00');
       
-      const initial = {};
-      SLOTS.forEach(slot => initial[slot] = []);
-      return initial;
+      const startSeason = new Date('2026-10-31T00:00:00');
+      const endSeason = new Date('2027-05-02T00:00:00');
+
+      if (date < startSeason || date > endSeason) return false;
+
+      // Periodo Natalizio: 23 Dicembre - 8 Gennaio
+      const month = date.getMonth(); // 0 = Gen, 11 = Dic
+      const day = date.getDate();
+      
+      const isXmasPeriod = (month === 11 && day >= 23) || (month === 0 && day <= 8);
+      if (isXmasPeriod) return true;
+
+      // Altrimenti solo Sabato (6) e Domenica (0)
+      const dayOfWeek = date.getDay();
+      return dayOfWeek === 0 || dayOfWeek === 6;
     }
 
-    function saveBookings(bookings) {
-      localStorage.setItem('cervinia_bookings', JSON.stringify(bookings));
+    function getBookings() {
+      const stored = localStorage.getItem('cervinia_bookings_v2');
+      return stored ? JSON.parse(stored) : {};
+    }
+
+    function saveBookings(allBookings) {
+      localStorage.setItem('cervinia_bookings_v2', JSON.stringify(allBookings));
       render();
     }
 
-    function addBooking(slot, inputId) {
+    function addBooking(selectedDate, slot, inputId) {
       const input = document.getElementById(inputId);
       const name = input.value.trim();
       if (!name) return;
 
-      const bookings = getBookings();
-      if (bookings[slot].length < MAX_CAPACITY) {
-        bookings[slot].push(name);
-        saveBookings(bookings);
+      const allBookings = getBookings();
+      if (!allBookings[selectedDate]) allBookings[selectedDate] = {};
+      if (!allBookings[selectedDate][slot]) allBookings[selectedDate][slot] = [];
+
+      if (allBookings[selectedDate][slot].length < MAX_CAPACITY) {
+        allBookings[selectedDate][slot].push(name);
+        saveBookings(allBookings);
         input.value = '';
       }
     }
 
-    function removeBooking(slot, index) {
-      const bookings = getBookings();
-      bookings[slot].splice(index, 1);
-      saveBookings(bookings);
+    function removeBooking(selectedDate, slot, index) {
+      const allBookings = getBookings();
+      if (allBookings[selectedDate] && allBookings[selectedDate][slot]) {
+        allBookings[selectedDate][slot].splice(index, 1);
+        saveBookings(allBookings);
+      }
     }
 
     function render() {
-      const bookings = getBookings();
+      const selectedDate = dateInput.value;
       const container = document.getElementById('slots-container');
       container.innerHTML = '';
 
+      if (!isDateValid(selectedDate)) {
+        errorMsg.style.display = 'block';
+        return;
+      } else {
+        errorMsg.style.display = 'none';
+      }
+
+      const allBookings = getBookings();
+      const dateBookings = allBookings[selectedDate] || {};
+
       SLOTS.forEach((slot, index) => {
-        const list = bookings[slot] || [];
+        const list = dateBookings[slot] || [];
         const isFull = list.length >= MAX_CAPACITY;
         const available = MAX_CAPACITY - list.length;
         const inputId = `input-${index}`;
@@ -155,14 +223,14 @@
 
           <div class="form-group">
             <input type="text" id="${inputId}" placeholder="Scrivi il tuo nome" ${isFull ? 'disabled' : ''}>
-            <button onclick="addBooking('${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
+            <button onclick="addBooking('${selectedDate}', '${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
           </div>
 
           <ul class="attendees-list">
             ${list.map((name, i) => `
               <li class="attendee-item">
                 <span>👤 ${name}</span>
-                <button class="btn-cancel" onclick="removeBooking('${slot}', ${i})">Cancella</button>
+                <button class="btn-cancel" onclick="removeBooking('${selectedDate}', '${slot}', ${i})">Cancella</button>
               </li>
             `).join('')}
           </ul>
@@ -171,6 +239,7 @@
       });
     }
 
+    dateInput.addEventListener('change', render);
     render();
   </script>
 </body>
