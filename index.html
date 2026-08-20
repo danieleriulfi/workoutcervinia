@@ -203,21 +203,18 @@
 
     let selectedDateStr = "";
 
-    // Genera la lista dei mesi a partire da Ottobre 2026 (prima disponibilità)
     function initMonthSelect() {
       const select = document.getElementById('month-select');
       select.innerHTML = '';
 
-      // La stagione/disponibilità parte da Ottobre 2026 (Mese index 9)
       const startYear = 2026;
-      const startMonth = 9; // Ottobre
+      const startMonth = 9; // Ottobre (0-indexed)
 
       const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
       ];
 
-      // Mostra la stagione da Ottobre fino a Maggio (8 mesi)
       for (let i = 0; i < 8; i++) {
         const d = new Date(startYear, startMonth + i, 1);
         const y = d.getFullYear();
@@ -234,53 +231,48 @@
     }
 
     function isDateValid(year, month, day) {
-  const date = new Date(year, month - 1, day);
-  
-  // Prima data in assoluto consentita: 31 Ottobre 2026
-  const firstAvailableDate = new Date(2026, 9, 31); 
-  firstAvailableDate.setHours(0, 0, 0, 0);
+      const date = new Date(year, month - 1, day);
+      date.setHours(0, 0, 0, 0);
+      
+      // Prima data consentita: 31 Ottobre 2026
+      const firstAvailableDate = new Date(2026, 9, 31); 
+      firstAvailableDate.setHours(0, 0, 0, 0);
 
-  if (date < firstAvailableDate) return false;
+      if (date < firstAvailableDate) return false;
 
-  // Formattazione data "AAAA-MM-GG" per i controlli
-  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  // 1. DATE BLOCCATE (Sintassi corretta con le virgole)
-  const blockedDates = [
-    "2026-12-25",
-    "2026-12-31",
-    "2027-01-01"
-  ];
+      // 1. Date bloccate
+      const blockedDates = [
+        "2026-12-25",
+        "2026-12-31",
+        "2027-01-01"
+      ];
+      if (blockedDates.includes(dateStr)) return false;
 
-  if (blockedDates.includes(dateStr)) {
-    return false; // Giorno bloccato tassativamente
-  }
+      // 2. Date extra
+      const extraDates = [
+        "2026-12-08"
+      ];
+      if (extraDates.includes(dateStr)) return true;
 
-  // 2. DATE EXTRA AGGIUNTIVE
-  const extraDates = [
-    "2026-12-08", // Martedì Immacolata
-  ];
+      // 3. Festività natalizie
+      const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
+      if (isXmas) return true;
 
-  if (extraDates.includes(dateStr)) {
-    return true; // Rende il giorno prenotabile anche se infrasettimanale
-  }
-
-  // 3. Festività natalizie (es. dal 23 Dic al 8 Gen)
-  const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
-  if (isXmas) return true;
-
-  // 4. Fine settimana (Sabato e Domenica)
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6;
-}
+      // 4. Weekend (Sabato e Domenica)
+      const dayOfWeek = date.getDay();
+      return dayOfWeek === 0 || dayOfWeek === 6;
+    }
 
     function renderDays() {
-      const monthVal = document.getElementById('month-select').value;
-      if (!monthVal) return;
+      const monthSelect = document.getElementById('month-select');
+      if (!monthSelect.value) return;
 
-      const [year, month] = monthVal.split('-').map(Number);
+      const [year, month] = monthSelect.value.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
       
+      // Calcolo offset primo giorno del mese (Lunedì = 0)
       const firstDayJS = new Date(year, month - 1, 1).getDay();
       const startOffset = (firstDayJS === 0) ? 6 : firstDayJS - 1;
 
@@ -294,6 +286,7 @@
       }
 
       let firstValidDayFound = false;
+      selectedDateStr = "";
 
       for (let d = 1; d <= daysInMonth; d++) {
         const isValid = isDateValid(year, month, d);
@@ -322,7 +315,6 @@
         container.appendChild(btn);
       }
 
-      if (!firstValidDayFound) selectedDateStr = "";
       renderSlots();
     }
 
@@ -412,9 +404,11 @@
       });
     }
 
-    // Inizializzazione
-    initMonthSelect();
-    renderDays();
+    // Inizializzazione corretta all'avvio
+    document.addEventListener('DOMContentLoaded', () => {
+      initMonthSelect();
+      renderDays();
+    });
   </script>
 </body>
 </html>
