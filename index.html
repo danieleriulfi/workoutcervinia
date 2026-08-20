@@ -24,27 +24,54 @@
 
     .container { max-width: 500px; margin: 0 auto; display: grid; gap: 15px; }
 
-    .date-picker-card {
+    .step-card {
       background-color: var(--card-bg);
       border-radius: 12px;
       padding: 16px;
-      text-align: center;
       border: 1px solid #334155;
     }
-    .date-picker-card label { display: block; font-weight: bold; margin-bottom: 8px; }
-    .date-picker-card input[type="date"] {
-      padding: 10px;
-      border-radius: 6px;
+
+    .step-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
       border: 1px solid #475569;
       background: #0f172a;
       color: #fff;
       font-size: 1rem;
-      width: 100%;
-      max-width: 250px;
+      cursor: pointer;
+    }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .day-btn {
+      padding: 10px 0;
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: white;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
       text-align: center;
     }
 
-    .error-msg { color: #f87171; font-size: 0.9rem; margin-top: 8px; display: none; }
+    .day-btn:hover { background: #334155; }
+    .day-btn.selected { background: var(--accent); border-color: var(--accent); }
+    .day-btn:disabled { opacity: 0.25; cursor: not-allowed; border-color: transparent; }
 
     .slot-card {
       background-color: var(--card-bg);
@@ -78,7 +105,7 @@
     }
     input[type="text"]:focus { outline: 2px solid var(--accent); }
 
-    button {
+    .btn-submit {
       padding: 10px 14px;
       border-radius: 6px;
       border: none;
@@ -87,8 +114,8 @@
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background-color: var(--accent-hover); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-submit:hover { background-color: var(--accent-hover); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .attendees-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .attendee-item {
@@ -105,6 +132,8 @@
       color: var(--danger);
       padding: 2px 6px;
       font-size: 0.8rem;
+      border: none;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -112,98 +141,147 @@
 
   <header>
     <h1>Functional Training Cervinia 🏔️</h1>
-    <p>Seleziona la data e inserisci il tuo nome per prenotare.<br>Massimo 5 persone per slot.</p>
+    <p>Scegli mese, giorno e orario per prenotarti.</p>
   </header>
 
   <div class="container">
-    <div class="date-picker-card">
-      <label for="booking-date">Scegli la data dell'allenamento:</label>
-      <input type="date" id="booking-date" min="2026-10-31" max="2027-05-02">
-      <div id="error-msg" class="error-msg">Iscrizioni aperte solo nei weekend (Sab/Dom) o nel periodo natalizio (23 Dic - 8 Gen).</div>
+    
+    <!-- STEP 1: Seleziona Mese -->
+    <div class="step-card">
+      <div class="step-title">1. Seleziona il Mese</div>
+      <select id="month-select" onchange="renderDays()">
+        <option value="2026-10">Ottobre 2026</option>
+        <option value="2026-11">Novembre 2026</option>
+        <option value="2026-12">Dicembre 2026</option>
+        <option value="2027-01">Gennaio 2027</option>
+        <option value="2027-02">Febbraio 2027</option>
+        <option value="2027-03">Marzo 2027</option>
+        <option value="2027-04">Aprile 2027</option>
+        <option value="2027-05">Maggio 2027</option>
+      </select>
     </div>
 
+    <!-- STEP 2: Seleziona Giorno -->
+    <div class="step-card">
+      <div class="step-title">2. Seleziona il Giorno</div>
+      <div id="days-container" class="days-grid"></div>
+    </div>
+
+    <!-- STEP 3: Slot Orari -->
     <div id="slots-container"></div>
+
   </div>
 
   <script>
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-    const dateInput = document.getElementById('booking-date');
-    const errorMsg = document.getElementById('error-msg');
+    let selectedDateStr = "";
 
-    // Imposta come data predefinita oggi se valida, altrimenti la prima data utile (31 ott)
-    const todayStr = new Date().toISOString().split('T')[0];
-    dateInput.value = isDateValid(todayStr) ? todayStr : "2026-10-31";
-
-    function isDateValid(dateString) {
-      if (!dateString) return false;
-      const date = new Date(dateString + 'T00:00:00');
-      
-      const startSeason = new Date('2026-10-31T00:00:00');
-      const endSeason = new Date('2027-05-02T00:00:00');
+    function isDateValid(year, month, day) {
+      const date = new Date(year, month - 1, day);
+      const startSeason = new Date(2026, 9, 31); // 31 Ottobre 2026
+      const endSeason = new Date(2027, 4, 2);   // 2 Maggio 2027
 
       if (date < startSeason || date > endSeason) return false;
 
       // Periodo Natalizio: 23 Dicembre - 8 Gennaio
-      const month = date.getMonth(); // 0 = Gen, 11 = Dic
-      const day = date.getDate();
-      
-      const isXmasPeriod = (month === 11 && day >= 23) || (month === 0 && day <= 8);
-      if (isXmasPeriod) return true;
+      const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
+      if (isXmas) return true;
 
       // Altrimenti solo Sabato (6) e Domenica (0)
       const dayOfWeek = date.getDay();
       return dayOfWeek === 0 || dayOfWeek === 6;
     }
 
+    function renderDays() {
+      const monthVal = document.getElementById('month-select').value;
+      const [year, month] = monthVal.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      
+      const container = document.getElementById('days-container');
+      container.innerHTML = '';
+
+      let firstValidDayFound = false;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isValid = isDateValid(year, month, d);
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        
+        const btn = document.createElement('button');
+        btn.className = 'day-btn';
+        btn.innerText = d;
+        btn.disabled = !isValid;
+
+        if (isValid) {
+          if (!firstValidDayFound) {
+            selectedDateStr = dateStr;
+            btn.classList.add('selected');
+            firstValidDayFound = true;
+          }
+
+          btn.onclick = () => {
+            document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedDateStr = dateStr;
+            renderSlots();
+          };
+        }
+
+        container.appendChild(btn);
+      }
+
+      if (!firstValidDayFound) {
+        selectedDateStr = "";
+      }
+      
+      renderSlots();
+    }
+
     function getBookings() {
-      const stored = localStorage.getItem('cervinia_bookings_v2');
+      const stored = localStorage.getItem('cervinia_bookings_v3');
       return stored ? JSON.parse(stored) : {};
     }
 
     function saveBookings(allBookings) {
-      localStorage.setItem('cervinia_bookings_v2', JSON.stringify(allBookings));
-      render();
+      localStorage.setItem('cervinia_bookings_v3', JSON.stringify(allBookings));
+      renderSlots();
     }
 
-    function addBooking(selectedDate, slot, inputId) {
+    function addBooking(slot, inputId) {
       const input = document.getElementById(inputId);
       const name = input.value.trim();
-      if (!name) return;
+      if (!name || !selectedDateStr) return;
 
       const allBookings = getBookings();
-      if (!allBookings[selectedDate]) allBookings[selectedDate] = {};
-      if (!allBookings[selectedDate][slot]) allBookings[selectedDate][slot] = [];
+      if (!allBookings[selectedDateStr]) allBookings[selectedDateStr] = {};
+      if (!allBookings[selectedDateStr][slot]) allBookings[selectedDateStr][slot] = [];
 
-      if (allBookings[selectedDate][slot].length < MAX_CAPACITY) {
-        allBookings[selectedDate][slot].push(name);
+      if (allBookings[selectedDateStr][slot].length < MAX_CAPACITY) {
+        allBookings[selectedDateStr][slot].push(name);
         saveBookings(allBookings);
         input.value = '';
       }
     }
 
-    function removeBooking(selectedDate, slot, index) {
+    function removeBooking(slot, index) {
       const allBookings = getBookings();
-      if (allBookings[selectedDate] && allBookings[selectedDate][slot]) {
-        allBookings[selectedDate][slot].splice(index, 1);
+      if (allBookings[selectedDateStr] && allBookings[selectedDateStr][slot]) {
+        allBookings[selectedDateStr][slot].splice(index, 1);
         saveBookings(allBookings);
       }
     }
 
-    function render() {
-      const selectedDate = dateInput.value;
+    function renderSlots() {
       const container = document.getElementById('slots-container');
       container.innerHTML = '';
 
-      if (!isDateValid(selectedDate)) {
-        errorMsg.style.display = 'block';
+      if (!selectedDateStr) {
+        container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Nessun giorno disponibile selezionato per questo mese.</div>';
         return;
-      } else {
-        errorMsg.style.display = 'none';
       }
 
       const allBookings = getBookings();
-      const dateBookings = allBookings[selectedDate] || {};
+      const dateBookings = allBookings[selectedDateStr] || {};
 
       SLOTS.forEach((slot, index) => {
         const list = dateBookings[slot] || [];
@@ -223,14 +301,14 @@
 
           <div class="form-group">
             <input type="text" id="${inputId}" placeholder="Scrivi il tuo nome" ${isFull ? 'disabled' : ''}>
-            <button onclick="addBooking('${selectedDate}', '${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
+            <button class="btn-submit" onclick="addBooking('${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
           </div>
 
           <ul class="attendees-list">
             ${list.map((name, i) => `
               <li class="attendee-item">
                 <span>👤 ${name}</span>
-                <button class="btn-cancel" onclick="removeBooking('${selectedDate}', '${slot}', ${i})">Cancella</button>
+                <button class="btn-cancel" onclick="removeBooking('${slot}', ${i})">Cancella</button>
               </li>
             `).join('')}
           </ul>
@@ -239,8 +317,8 @@
       });
     }
 
-    dateInput.addEventListener('change', render);
-    render();
+    // Avvio iniziale
+    renderDays();
   </script>
 </body>
 </html>
