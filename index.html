@@ -242,6 +242,15 @@
 
       if (date < firstAvailableDate) return false;
 
+      // --- 1. DATE EXTRA AGGIUNTIVE (FORMATO "AAAA-MM-GG") ---
+  const extraDates = [
+    "2026-12-08", // Esempio: Martedì 8 Dicembre (Immacolata)
+  ];
+
+  if (extraDates.includes(dateStr)) {
+    return true; // Rende il giorno prenotabile anche se infrasettimanale
+
+      
 // --- DATE BLOCCATE (AGGIUNGI QUI LE DATE DA DISABILITARE) ---
   const blockedDates = [
     "2026-12-25"
