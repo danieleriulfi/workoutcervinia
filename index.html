@@ -204,31 +204,41 @@
     let selectedDateStr = "";
 
     function initMonthSelect() {
-      const select = document.getElementById('month-select');
-      select.innerHTML = '';
+  const select = document.getElementById('month-select');
+  select.innerHTML = '';
 
-      const startYear = 2026;
-      const startMonth = 9; // Ottobre (0-indexed)
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
-      const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
+  // Data attuale di sistema
+  const now = new Date();
+  let startYear = now.getFullYear();
+  let startMonth = now.getMonth(); // 0-indexed
 
-      for (let i = 0; i < 8; i++) {
-        const d = new Date(startYear, startMonth + i, 1);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        
-        const val = `${y}-${String(m + 1).padStart(2, '0')}`;
-        const label = `${monthNames[m]} ${y}`;
+  // Se siamo prima di Ottobre 2026, forza la partenza da Ottobre 2026
+  const minStartDate = new Date(2026, 9, 1);
+  if (now < minStartDate) {
+    startYear = 2026;
+    startMonth = 9; // Ottobre
+  }
 
-        const option = document.createElement('option');
-        option.value = val;
-        option.textContent = label;
-        select.appendChild(option);
-      }
-    }
+  // Popola i prossimi 8 mesi a partire da quello attuale/iniziale
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(startYear, startMonth + i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    
+    const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const label = `${monthNames[m]} ${y}`;
+
+    const option = document.createElement('option');
+    option.value = val;
+    option.textContent = label;
+    select.appendChild(option);
+  }
+}
 
     function isDateValid(year, month, day) {
       const date = new Date(year, month - 1, day);
