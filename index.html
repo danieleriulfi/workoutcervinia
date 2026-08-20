@@ -242,6 +242,18 @@
 
       if (date < firstAvailableDate) return false;
 
+// --- DATE BLOCCATE (AGGIUNGI QUI LE DATE DA DISABILITARE) ---
+  const blockedDates = [
+    "2026-12-25"
+    "2026-12-31"
+      "2027-01-01"
+  ];
+
+  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  if (blockedDates.includes(dateStr)) {
+    return false; // Giorno bloccato
+  }
+      
       // Festività natalizie
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
