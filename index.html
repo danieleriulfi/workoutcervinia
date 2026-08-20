@@ -163,16 +163,7 @@
   <div class="container">
     <div class="step-card">
       <div class="step-title">1. Select Month</div>
-      <select id="month-select" onchange="renderDays()">
-        <option value="2026-10">October 2026</option>
-        <option value="2026-11">November 2026</option>
-        <option value="2026-12">December 2026</option>
-        <option value="2027-01">January 2027</option>
-        <option value="2027-02">February 2027</option>
-        <option value="2027-03">March 2027</option>
-        <option value="2027-04">April 2027</option>
-        <option value="2027-05">May 2027</option>
-      </select>
+      <select id="month-select" onchange="renderDays()"></select>
     </div>
 
     <div class="step-card">
@@ -209,29 +200,60 @@
 
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-    const BLOCKED_DATES = ["2026-12-25", "2027-01-01"];
 
     let selectedDateStr = "";
 
+    // Genera la lista dei mesi dinamicamente a partire dal mese corrente
+    function initMonthSelect() {
+      const select = document.getElementById('month-select');
+      select.innerHTML = '';
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      // Mostra fino a 8 mesi a partire dal mese corrente
+      for (let i = 0; i < 8; i++) {
+        const d = new Date(currentYear, currentMonth + i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        
+        const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+        const label = `${monthNames[m]} ${y}`;
+
+        const option = document.createElement('option');
+        option.value = val;
+        option.textContent = label;
+        select.appendChild(option);
+      }
+    }
+
     function isDateValid(year, month, day) {
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      if (BLOCKED_DATES.includes(dateStr)) return false;
-
       const date = new Date(year, month - 1, day);
-      const startSeason = new Date(2026, 9, 31);
-      const endSeason = new Date(2027, 4, 2);
+      
+      // Non permette prenotazioni nei giorni passati
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (date < today) return false;
 
-      if (date < startSeason || date > endSeason) return false;
-
+      // Festività natalizie
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
 
+      // Altrimenti consente la prenotazione nei fine settimana (Sabato e Domenica)
       const dayOfWeek = date.getDay();
       return dayOfWeek === 0 || dayOfWeek === 6;
     }
 
     function renderDays() {
       const monthVal = document.getElementById('month-select').value;
+      if (!monthVal) return;
+
       const [year, month] = monthVal.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
       
@@ -366,6 +388,8 @@
       });
     }
 
+    // Inizializzazione
+    initMonthSelect();
     renderDays();
   </script>
 </body>
