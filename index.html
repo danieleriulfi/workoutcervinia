@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Functional Training Cervinia - Booking</title>
+  <title>Workout Cervinia - Booking</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -52,6 +52,18 @@
       cursor: pointer;
     }
 
+    /* Weekday Headers */
+    .weekdays-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--subtext);
+    }
+
     .days-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -72,6 +84,7 @@
     .day-btn:hover { background: #334155; }
     .day-btn.selected { background: var(--accent); border-color: var(--accent); }
     .day-btn:disabled { opacity: 0.25; cursor: not-allowed; border-color: transparent; }
+    .day-empty { background: transparent; border: none; }
 
     .slot-card {
       background-color: var(--card-bg);
@@ -164,6 +177,16 @@
     <!-- STEP 2: Select Day -->
     <div class="step-card">
       <div class="step-title">2. Select Day</div>
+      <!-- Weekday Headers (Monday to Sunday) -->
+      <div class="weekdays-grid">
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+        <div>Sun</div>
+      </div>
       <div id="days-container" class="days-grid"></div>
     </div>
 
@@ -178,8 +201,8 @@
     
     // Add dates you want to BLOCK here in "YYYY-MM-DD" format
     const BLOCKED_DATES = [
-      "2026-12-25", // Example: Christmas Day
-      "2027-01-01"  // Example: New Year's Day
+      "2026-12-25", // Christmas Day
+      "2027-01-01"  // New Year's Day
     ];
 
     let selectedDateStr = "";
@@ -200,7 +223,7 @@
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
 
-      // Otherwise weekends only (Saturday = 6, Sunday = 0)
+      // Weekends only (Saturday = 6, Sunday = 0)
       const dayOfWeek = date.getDay();
       return dayOfWeek === 0 || dayOfWeek === 6;
     }
@@ -210,8 +233,20 @@
       const [year, month] = monthVal.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
       
+      // Calculate starting day of the month aligned with Monday as index 0
+      // Date.getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
+      const firstDayJS = new Date(year, month - 1, 1).getDay();
+      const startOffset = (firstDayJS === 0) ? 6 : firstDayJS - 1;
+
       const container = document.getElementById('days-container');
       container.innerHTML = '';
+
+      // Add empty placeholder cells for days before the 1st of the month
+      for (let i = 0; i < startOffset; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'day-empty';
+        container.appendChild(emptyCell);
+      }
 
       let firstValidDayFound = false;
 
