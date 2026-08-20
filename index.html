@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workout Cervinia - Booking</title>
+  <title>Functional Training Cervinia - Booking</title>
+  
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
   <style>
     :root {
       --bg: #0f172a;
@@ -52,7 +56,6 @@
       cursor: pointer;
     }
 
-    /* Weekday Headers */
     .weekdays-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -158,8 +161,6 @@
   </header>
 
   <div class="container">
-    
-    <!-- STEP 1: Select Month -->
     <div class="step-card">
       <div class="step-title">1. Select Month</div>
       <select id="month-select" onchange="renderDays()">
@@ -174,56 +175,57 @@
       </select>
     </div>
 
-    <!-- STEP 2: Select Day -->
     <div class="step-card">
       <div class="step-title">2. Select Day</div>
-      <!-- Weekday Headers (Monday to Sunday) -->
       <div class="weekdays-grid">
-        <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
-        <div>Sun</div>
+        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
       </div>
       <div id="days-container" class="days-grid"></div>
     </div>
 
-    <!-- STEP 3: Time Slots -->
     <div id="slots-container"></div>
-
   </div>
 
   <script>
+    // --- EMAILJS CONFIGURATION ---
+    const EMAILJS_PUBLIC_KEY = "puwNNWhFY_Bn07wU6";
+    const EMAILJS_SERVICE_ID = "service_t8w4z6d";
+    const EMAILJS_TEMPLATE_ID = "template_gzhcw2w";
+
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    function sendNotification(action, name, date, slot) {
+      const templateParams = {
+        action: action,
+        user_name: name,
+        booking_date: date,
+        booking_slot: slot
+      };
+
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(() => console.log('Notification email sent!'))
+        .catch(err => console.error('Failed to send email:', err));
+    }
+
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-    
-    // Add dates you want to BLOCK here in "YYYY-MM-DD" format
-    const BLOCKED_DATES = [
-      "2026-12-25", // Christmas Day
-      "2027-01-01"  // New Year's Day
-    ];
+    const BLOCKED_DATES = ["2026-12-25", "2027-01-01"];
 
     let selectedDateStr = "";
 
     function isDateValid(year, month, day) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      
-      // Check if date is manually blocked
       if (BLOCKED_DATES.includes(dateStr)) return false;
 
       const date = new Date(year, month - 1, day);
-      const startSeason = new Date(2026, 9, 31); // Oct 31, 2026
-      const endSeason = new Date(2027, 4, 2);   // May 2, 2027
+      const startSeason = new Date(2026, 9, 31);
+      const endSeason = new Date(2027, 4, 2);
 
       if (date < startSeason || date > endSeason) return false;
 
-      // Christmas Holiday Period: Dec 23 - Jan 8
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
       if (isXmas) return true;
 
-      // Weekends only (Saturday = 6, Sunday = 0)
       const dayOfWeek = date.getDay();
       return dayOfWeek === 0 || dayOfWeek === 6;
     }
@@ -233,15 +235,12 @@
       const [year, month] = monthVal.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
       
-      // Calculate starting day of the month aligned with Monday as index 0
-      // Date.getDay(): 0 = Sun, 1 = Mon, ..., 6 = Sat
       const firstDayJS = new Date(year, month - 1, 1).getDay();
       const startOffset = (firstDayJS === 0) ? 6 : firstDayJS - 1;
 
       const container = document.getElementById('days-container');
       container.innerHTML = '';
 
-      // Add empty placeholder cells for days before the 1st of the month
       for (let i = 0; i < startOffset; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'day-empty';
@@ -277,10 +276,7 @@
         container.appendChild(btn);
       }
 
-      if (!firstValidDayFound) {
-        selectedDateStr = "";
-      }
-      
+      if (!firstValidDayFound) selectedDateStr = "";
       renderSlots();
     }
 
@@ -306,6 +302,9 @@
       if (allBookings[selectedDateStr][slot].length < MAX_CAPACITY) {
         allBookings[selectedDateStr][slot].push(name);
         saveBookings(allBookings);
+        
+        sendNotification("NUOVA PRENOTAZIONE", name, selectedDateStr, slot);
+        
         input.value = '';
       }
     }
@@ -313,8 +312,11 @@
     function removeBooking(slot, index) {
       const allBookings = getBookings();
       if (allBookings[selectedDateStr] && allBookings[selectedDateStr][slot]) {
+        const removedName = allBookings[selectedDateStr][slot][index];
         allBookings[selectedDateStr][slot].splice(index, 1);
         saveBookings(allBookings);
+
+        sendNotification("CANCELLAZIONE", removedName, selectedDateStr, slot);
       }
     }
 
@@ -364,7 +366,6 @@
       });
     }
 
-    // Initial render
     renderDays();
   </script>
 </body>
