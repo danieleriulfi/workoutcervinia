@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Functional Training Cervinia - Prenotazione Slot</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #0284c7;
+      --accent-hover: #0369a1;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px 15px; min-height: 100vh; }
+    
+    header { text-align: center; margin-bottom: 25px; }
+    header h1 { font-size: 1.8rem; margin-bottom: 8px; color: #fff; }
+    header p { color: var(--subtext); font-size: 0.95rem; }
+
+    .container { max-width: 500px; margin: 0 auto; display: grid; gap: 15px; }
+
+    .slot-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 8px;
+    }
+
+    .time { font-size: 1.2rem; font-weight: bold; }
+    .badge { background: #334155; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; }
+    .badge.full { background: #991b1b; color: #fecaca; }
+
+    .form-group { display: flex; gap: 8px; margin-bottom: 12px; }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    input[type="text"]:focus { outline: 2px solid var(--accent); }
+
+    button {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: var(--accent);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background-color: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .attendees-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .attendee-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .btn-cancel {
+      background: transparent;
+      color: var(--danger);
+      padding: 2px 6px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Functional Training Cervinia 🏔️</h1>
+    <p>Inserisci il tuo nome per prenotare la lezione.<br>Massimo 5 persone per slot.</p>
+  </header>
+
+  <div class="container" id="slots-container"></div>
+
+  <script>
+    const MAX_CAPACITY = 5;
+    const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+
+    function getBookings() {
+      const stored = localStorage.getItem('cervinia_bookings');
+      if (stored) return JSON.parse(stored);
+      
+      const initial = {};
+      SLOTS.forEach(slot => initial[slot] = []);
+      return initial;
+    }
+
+    function saveBookings(bookings) {
+      localStorage.setItem('cervinia_bookings', JSON.stringify(bookings));
+      render();
+    }
+
+    function addBooking(slot, inputId) {
+      const input = document.getElementById(inputId);
+      const name = input.value.trim();
+      if (!name) return;
+
+      const bookings = getBookings();
+      if (bookings[slot].length < MAX_CAPACITY) {
+        bookings[slot].push(name);
+        saveBookings(bookings);
+        input.value = '';
+      }
+    }
+
+    function removeBooking(slot, index) {
+      const bookings = getBookings();
+      bookings[slot].splice(index, 1);
+      saveBookings(bookings);
+    }
+
+    function render() {
+      const bookings = getBookings();
+      const container = document.getElementById('slots-container');
+      container.innerHTML = '';
+
+      SLOTS.forEach((slot, index) => {
+        const list = bookings[slot] || [];
+        const isFull = list.length >= MAX_CAPACITY;
+        const available = MAX_CAPACITY - list.length;
+        const inputId = `input-${index}`;
+
+        const card = document.createElement('div');
+        card.className = 'slot-card';
+        card.innerHTML = `
+          <div class="slot-header">
+            <span class="time">Ore ${slot}</span>
+            <span class="badge ${isFull ? 'full' : ''}">
+              ${isFull ? 'Completo' : `${available} posti liberi`}
+            </span>
+          </div>
+
+          <div class="form-group">
+            <input type="text" id="${inputId}" placeholder="Scrivi il tuo nome" ${isFull ? 'disabled' : ''}>
+            <button onclick="addBooking('${slot}', '${inputId}')" ${isFull ? 'disabled' : ''}>Prenota</button>
+          </div>
+
+          <ul class="attendees-list">
+            ${list.map((name, i) => `
+              <li class="attendee-item">
+                <span>👤 ${name}</span>
+                <button class="btn-cancel" onclick="removeBooking('${slot}', ${i})">Cancella</button>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
