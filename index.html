@@ -203,23 +203,23 @@
 
     let selectedDateStr = "";
 
-    // Genera la lista dei mesi dinamicamente a partire dal mese corrente
+    // Genera la lista dei mesi a partire da Ottobre 2026 (prima disponibilità)
     function initMonthSelect() {
       const select = document.getElementById('month-select');
       select.innerHTML = '';
 
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
+      // La stagione/disponibilità parte da Ottobre 2026 (Mese index 9)
+      const startYear = 2026;
+      const startMonth = 9; // Ottobre
 
       const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
       ];
 
-      // Mostra fino a 8 mesi a partire dal mese corrente
+      // Mostra la stagione da Ottobre fino a Maggio (8 mesi)
       for (let i = 0; i < 8; i++) {
-        const d = new Date(currentYear, currentMonth + i, 1);
+        const d = new Date(startYear, startMonth + i, 1);
         const y = d.getFullYear();
         const m = d.getMonth();
         
@@ -236,10 +236,11 @@
     function isDateValid(year, month, day) {
       const date = new Date(year, month - 1, day);
       
-      // Non permette prenotazioni nei giorni passati
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (date < today) return false;
+      // Prima data in assoluto consentita: 31 Ottobre 2026
+      const firstAvailableDate = new Date(2026, 9, 31); // 31 Ottobre 2026
+      firstAvailableDate.setHours(0, 0, 0, 0);
+
+      if (date < firstAvailableDate) return false;
 
       // Festività natalizie
       const isXmas = (month === 12 && day >= 23) || (month === 1 && day <= 8);
