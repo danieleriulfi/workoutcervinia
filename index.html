@@ -175,9 +175,21 @@
   <script>
     const MAX_CAPACITY = 5;
     const SLOTS = ["14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+    
+    // Inserisci qui le date che vuoi BLOCCARE nel formato "AAAA-MM-GG"
+    const BLOCKED_DATES = [
+      "2026-12-25", // Esempio: Natale
+      "2027-01-01"  // Esempio: Capodanno
+    ];
+
     let selectedDateStr = "";
 
     function isDateValid(year, month, day) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      // Controlla se la data è nell'elenco delle date bloccate
+      if (BLOCKED_DATES.includes(dateStr)) return false;
+
       const date = new Date(year, month - 1, day);
       const startSeason = new Date(2026, 9, 31); // 31 Ottobre 2026
       const endSeason = new Date(2027, 4, 2);   // 2 Maggio 2027
